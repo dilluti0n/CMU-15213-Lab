@@ -1,6 +1,6 @@
 # Lab0 CProgrammingLab
 
-Forked from an existing repository for convenience. I deleted the previous commit's owner's solution (which was in cprogramminglab-handout-solution), which exists in the original repository.
+Forked from an existing repository for convenience. I deleted the previous commit's owner's solution (which was in cprogramminglab-handout-solution), which exists in the original(https://github.com/codeAligned/CMU-15213-Lab/blob/master/0_CProgrammingLab/cprogramminglab-handout-solution/queue.c) repository.
 
 The original tar file is `cprogramminglab-handout.tar` and the writeup is
 `cprogramminglab.pdf`. My(dilluti0n) solution is in `cprogramminglab-handout`.
@@ -18,12 +18,10 @@ cannot run `make test`, since `./driver.py` is used.
 1. Install python2 in your environment;
 2. Run `python2 driver.py`.
 
-The most tricky part in this lab is to pass trace case 11 and 12. You can try
-commentting out the 2 lines in `queue.c` marked as "IMPORTANT", which would cause
-memory leak. 
-Lesson: when a function relies on the success of a series of memory allocation,
-remember to free all previous allocated memory, in case any one of the memory
-allocation step fails.
+I did this lab assignment before self-studying 15-213, and it was difficult and time consuming, so I studied K&R C first. 
+My solutions to its exercises can be found at https://github.com/dilluti0n/sols, and the commentary in Section 6, which is particularly helpful in solving this one, can be found at https://github.com/dilluti0n/sols/blob/master/6/readme_chapter_6.md. 
+It's written in Korean, but it doesn't use complex sentences, so you should be able to read it with Google Translater.
 
-I read the book: *The C Programming Language* before doing this lab. The note
-when reading the book is in folder `TheCProgrammingLanguage`.
+The function `q_free` in my code tests whether value is `NULL` before `free` the value of each list element, which is unnecessary in this code because if the malloc of value of `q_insert_head` or `q_insert_tail` fails, the function exits without creating a node, and there is no way to create a node without giving it a value.
+A personal difficulty in solving this problem was that I had to implement `free` and `add` without using recursive functions, 
+unlike what the authors of K&R C did. This was achieved by using variables such as `nxt` and `prv`.
