@@ -68,11 +68,8 @@ bool q_insert_head(queue_t *q, char *s)
     }
     strcpy(newh->value, s);
     newh->next = q->head;
-    newh->prev = NULL;
     if (q->tail == NULL) /* empty quene */
         q->tail = newh;
-    else /* not empty */
-        q->head->prev = newh;
     q->head = newh;
     q->size++;
     return true;
@@ -98,7 +95,6 @@ bool q_insert_tail(queue_t *q, char *s)
     }
     strcpy(newt->value, s);
     newt->next = NULL;
-    newt->prev = q->tail;
     if (q->head == NULL) /* empty quene */
         q->head = newt;
     else /* not empty */
@@ -131,8 +127,6 @@ bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
         free(remove->value);
     if ((q->head = remove->next) == NULL)
         q->tail = NULL;
-    else
-        q->head->prev = NULL;
     free(remove);
     q->size--;
     return true;
@@ -158,15 +152,14 @@ int q_size(queue_t *q)
  */
 void q_reverse(queue_t *q)
 {
-    list_ele_t *lp, *tmp;
+    list_ele_t *lp, *nxt, *prv;
     if (q != NULL) {
-        for (lp = q->head; lp != NULL; lp = tmp) {
-            tmp = lp->next;
-            lp->next = lp->prev;
-            lp->prev = tmp;
+        for (lp = q->head, prv = NULL; lp != NULL; lp = nxt) {
+            nxt = lp->next;
+            lp->next = prv;
+            prv = lp;
         }
-        tmp = q->tail;
         q->tail = q->head;
-        q->head = tmp;
+        q->head = prv;
     }
 }
