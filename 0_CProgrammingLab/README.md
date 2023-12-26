@@ -1,7 +1,9 @@
 # Lab0 CProgrammingLab
 
+Forked from an existing repository for convenience. I deleted the previous commit's owner's solution (which was in cprogramminglab-handout-solution), which exists in the original repository.
+
 The original tar file is `cprogramminglab-handout.tar` and the writeup is
-`cprogramminglab.pdf`. My solution is in `cprogramminglab-handout-solution`.
+`cprogramminglab.pdf`. My(dilluti0n) solution is in `cprogramminglab-handout`.
 
 After untaring cprogramminglab-handout.tar, you follow the instructions in 
 `cprogramming.pdf` to untar the folder. You can run `make` directly, but you
