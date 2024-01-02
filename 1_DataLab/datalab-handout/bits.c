@@ -267,10 +267,12 @@ int conditional(int x, int y, int z) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
+    int signX = x & 1 << 31;
+    int signY = y & 1 << 31;
+    int indicator = signX ^ signY; /* 0 if same sign, tmin if diffrent sign */
     int diff = y + ~x + 1; /* diff = y - x */
     diff &= 1 << 31; /* if y - x < 0, diff = tmin, y - x >= 0, diff = 0 */
-    /* negate tmin will lead buffer overflow, so you should check if x is timn(1 << 31) */
-    return !diff | !(x ^ 1 << 31);
+    return (!diff & !indicator) | (!signY & !!indicator);
 }
 //4
 /* 
