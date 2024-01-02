@@ -167,7 +167,7 @@ int bitXor(int x, int y) {
  *   Rating: 1
  */
 int tmin(void) {
-    /* int is 32 bit, which implies tmin is 80 00 00 00 in hex, which is 1 << 31 */
+    /* int is 32 bit, which implies tmin is 0x80000000, which is 1 << 31 */
     return 1 << 31;
 }
 //2
@@ -195,21 +195,21 @@ int isTmax(int x) {
  */
 int allOddBits(int x) {
     /*
-     * x  y  | (~x) & y
+     * x  y  |  x & ~y
      * =================
      * 0  1  |     0
      * 1  0  |     1
      * 0  0  |     0
      * 1  1  |     0
      * =================
-     * basic on this fact, we just need 0xAAAAAAAA for x and x (the fun-
-     * ction argument x) for y.
-     * The single byte of all odd-numbered bits set to 1 and all 
+     * if x = 0xAAAAAAAA, x & ~y yields non-zero only if there is zero bit on y's 
+     * odd bits, the case which is intended to return zero on this function.
+     * Single byte of all odd-numbered bits set to 1 and all 
      * even-numbered bits set to 0 is 0xAA (1010 1010).
      */
-    int bytes = 0xAA << 8 | 0xAA; /* 0xAAAA, two bytes */
-    bytes = bytes << 16 | bytes; /* 0xAAAAAAAA, four bytes */
-    return !(~bytes & x);
+    int mask = 0xAA << 8 | 0xAA; /* 0xAAAA, two bytes */
+    mask = mask << 16 | mask; /* 0xAAAAAAAA, four bytes */
+    return !(mask & ~x);
 }
 /* 
  * negate - return -x 
@@ -219,18 +219,8 @@ int allOddBits(int x) {
  *   Rating: 2
  */
 int negate(int x) {
-    /*
-     * x  y  | (operation)
-     * ===================
-     * 0  1  |     1
-     * 1  0  |     1
-     * 0  0  |     0
-     * 1  1  |     0
-     * ===================
-     * we need this (operation) for x = ~x (function argument) and y = 1 << 31 (0x80000000) 
-     * to change the leading sign bit of x without changing other bits, Which is x ^ y.
-     */
-    return x ^ 1 << 31;
+    return ~x + 1; 
+    /* note :negating tmin will lead buffer overflow. negate(tmin) = tmin */
 }
 //3
 /* 
@@ -244,10 +234,11 @@ int negate(int x) {
  */
 int isAsciiDigit(int x) {
     /*
-     * 0x30 (0010 0000) <= x <= 0x39 (0010 0011) if and only if x >> 2 = 0x08 (0000 1000).
+     * 0x30 (0011 0000), 0x39 (0011 1001).
+     * 0x30 <= x <= 0x39 if and only if x >> 3 = 6(0110) or x >> 1 = 0x1c(0001 1100).
      * and x ^ y = 0 implies x = y.
      */
-    return !(x >> 2 ^ 8);
+    return !(x >> 3 ^ 6) | !(x >> 1 ^ 0x1c);
 }
 /* 
  * conditional - same as x ? y : z 
@@ -276,7 +267,10 @@ int conditional(int x, int y, int z) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
-  return 2;
+    int diff = y + ~x + 1; /* diff = y - x */
+    diff &= 1 << 31; /* if y - x < 0, diff = tmin, y - x >= 0, diff = 0 */
+    /* negate tmin will lead buffer overflow, so you should check if x is timn(1 << 31) */
+    return !diff | !(x ^ 1 << 31);
 }
 //4
 /* 
@@ -288,7 +282,7 @@ int isLessOrEqual(int x, int y) {
  *   Rating: 4 
  */
 int logicalNeg(int x) {
-  return 2;
+    int twoX = x + ~((~x) + 1) + 1; /* x - (-x) */
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
