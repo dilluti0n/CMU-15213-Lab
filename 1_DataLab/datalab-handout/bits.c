@@ -149,10 +149,10 @@ int bitXor(int x, int y) {
      * 0  0  |      1      |       1      |           1             |    0    
      * =======================================================================
      * this implies
-     * x | y = ~(~x & ~y)
+     * x | y = ~(~x & ~y) (De Morgan)
      * and
-     * x ^ y = (x & ~y) | (~x & y)
-     *       = ~(x & ~y) & ~(~x & y)
+     * x ^ y = ~((x & ~y) | (~x & y))
+     *       = ~(~(x & ~y) & ~(~x & y)).
      * furthermore,
      * x ^ y = ~(x & y) & (x | y)
      *       = ~(x & y) & ~(~x & ~y)
@@ -180,11 +180,11 @@ int tmin(void) {
  */
 int isTmax(int x) {
     /*
-     * Tmax = ~tmin = ~(1 << 31).
-     * and x ^ y = 0 implies x = y.
-     * thus our function should return !(x ^ ~(1 << 31)).
+     * Tmax = ~tmin,
+     * ~x + 1 = x implies x = 0 or x = tmin.
+     * thus x + 1 = ~x only if x = -1 or x = Tmax.
      */
-    return !(x ^ ~(1 << 31));
+    return !((x + 1) ^ ~x) & !!~x;
 }
 /* 
  * allOddBits - return 1 if all odd-numbered bits in word set to 1
@@ -220,7 +220,7 @@ int allOddBits(int x) {
  */
 int negate(int x) {
     return ~x + 1; 
-    /* note :negating tmin will lead buffer overflow. negate(tmin) = tmin */
+    /* note: negating tmin will lead buffer overflow. negate(tmin) = tmin */
 }
 //3
 /* 
@@ -284,7 +284,13 @@ int isLessOrEqual(int x, int y) {
  *   Rating: 4 
  */
 int logicalNeg(int x) {
-    int twoX = x + ~((~x) + 1) + 1; /* x - (-x) */
+    /* 
+     * given x, sign bit of -x is same only if x = 0 or x = tmin. 
+     * if x = 0, sign bit is both 0 and for x = tmin, it is both 1.
+     */
+    int signX = x & (1 << 31);
+    int signNegX = (~x + 1) & (1 << 31);
+    return ~(~(signX | signNegX) >> 31) + 1; /* assume arithmetic right shift */
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
@@ -299,7 +305,41 @@ int logicalNeg(int x) {
  *  Rating: 4
  */
 int howManyBits(int x) {
-  return 0;
+    /*
+     * If the given integer is unsigned, then the number of bits required for 
+     * the unsigned bit representation is simply the position of the 
+     * leftmost '1' bit.
+     * 
+     * However, since we are dealing with the two's complement representation, in the case 
+     * where x is positive (i.e., the leading bit is 0), we need to find the position 
+     * of the leftmost '1' bit just like in the unsigned case, and add 1 for the 
+     * sign bit. In the case where x is negative (i.e., the leading bit is 1), 
+     * we need to find the position of the leftmost '0' bit and add 1.
+     * 
+     * It can be done same for all signed values, if x is negative, complementing x and then 
+     * adding 1 to the position of the leading-1. 
+     * 
+     * To efficiently find the position of the leading-1, We will use a bit version of binary search.
+     */
+    int signX = ~((x >> 31) & 1) + 1; /* -1 if x is negative, 0 if x is positive. */
+    x = signX & ~x | ~signX & x; /* if x is negative, complement it. */
+    int mask_16 = 0xFF << 8 | 0xFF; /* 0xFFFF */
+    int Bool_16 = ~!!(mask_16 & x >> 16) + 1; /* -1 if leading-1 is in upper 16 bits, 0 if not. */
+    x = Bool_16 & (x >> 16) | ~Bool_16 & x; /* now x is 16-bit */
+    /* do same to 8-bits */
+    int Bool_8 = ~!!(0xFF & x >> 8) + 1;
+    x = Bool_8 & (x >> 8) | ~Bool_8 & x; /* now x is 8-bit */
+    /* do same to 4-bits */
+    int Bool_4 = ~!!(0xF & x >> 4) + 1;
+    x = Bool_4 & (x >> 4) | ~Bool_4 & x; /* now x is 4-bit */
+    /* do same to 2-bits */
+    int Bool_2 = ~!!(3 & x >> 2) + 1;
+    x = Bool_2 & (x >> 2) | ~Bool_2 & x; /* now x is 2-bit */
+    /* do same to 1-bit */
+    int Bool_1 = ~!!(1 & x >> 1) + 1; /* now we have the position of leading-1 bit. */
+    x = Bool_1 & (x >> 1) | ~Bool_1 & x; /* if there was no leading-1 bit, it will be zero. else 1. */
+    int position = (Bool_16 & 16) + (Bool_8 & 8) + (Bool_4 & 4) + (Bool_2 & 2) + (Bool_1 & 1) + x;
+    return position + 1;
 }
 //float
 /* 
