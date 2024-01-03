@@ -131,6 +131,11 @@ NOTES:
 
 
 #endif
+
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wparentheses"
+#pragma GCC diagnostic ignored "-Wbool-operation"
+#endif
 //1
 /* 
  * bitXor - x^y using only ~ and & 
