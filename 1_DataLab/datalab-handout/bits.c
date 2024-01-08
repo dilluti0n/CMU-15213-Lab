@@ -135,6 +135,7 @@ NOTES:
 #ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Wparentheses"
 #pragma GCC diagnostic ignored "-Wbool-operation"
+#pragma GCC diagnostic ignored "-Wint-in-bool-context"
 #endif
 //1
 /* 
@@ -163,7 +164,7 @@ int bitXor(int x, int y) {
      *       = ~(x & y) & ~(~x & ~y)
      * could be possablie answaer too.
      */
-    return ~(~(x & ~y) & ~(~x & y));
+    return ~(x & y) & ~(~x & ~y);
 }
 /* 
  * tmin - return minimum two's complement integer 
@@ -326,25 +327,26 @@ int howManyBits(int x) {
      * 
      * To efficiently find the position of the leading-1, We will use a bit version of binary search.
      */
-    int signX = ~((x >> 31) & 1) + 1; /* -1 if x is negative, 0 if x is positive. */
+    int signX, mask_16;
+    int Bool_16, Bool_8, Bool_4, Bool_2, Bool_1;
+    signX = ~((x >> 31) & 1) + 1; /* -1 if x is negative, 0 if x is positive. */
     x = signX & ~x | ~signX & x; /* if x is negative, complement it. */
-    int mask_16 = 0xFF << 8 | 0xFF; /* 0xFFFF */
-    int Bool_16 = ~!!(mask_16 & x >> 16) + 1; /* -1 if leading-1 is in upper 16 bits, 0 if not. */
+    mask_16 = 0xFF << 8 | 0xFF; /* 0xFFFF */
+    Bool_16 = ~!!(mask_16 & x >> 16) + 1; /* -1 if leading-1 is in upper 16 bits, 0 if not. */
     x = Bool_16 & (x >> 16) | ~Bool_16 & x; /* now x is 16-bit */
     /* do same to 8-bits */
-    int Bool_8 = ~!!(0xFF & x >> 8) + 1;
+    Bool_8 = ~!!(0xFF & x >> 8) + 1;
     x = Bool_8 & (x >> 8) | ~Bool_8 & x; /* now x is 8-bit */
     /* do same to 4-bits */
-    int Bool_4 = ~!!(0xF & x >> 4) + 1;
+    Bool_4 = ~!!(0xF & x >> 4) + 1;
     x = Bool_4 & (x >> 4) | ~Bool_4 & x; /* now x is 4-bit */
     /* do same to 2-bits */
-    int Bool_2 = ~!!(3 & x >> 2) + 1;
+    Bool_2 = ~!!(3 & x >> 2) + 1;
     x = Bool_2 & (x >> 2) | ~Bool_2 & x; /* now x is 2-bit */
     /* do same to 1-bit */
-    int Bool_1 = ~!!(1 & x >> 1) + 1; /* now we have the position of leading-1 bit. */
+    Bool_1 = ~!!(1 & x >> 1) + 1; /* now we have the position of leading-1 bit. */
     x = Bool_1 & (x >> 1) | ~Bool_1 & x; /* if there was no leading-1 bit, it will be zero. else 1. */
-    int position = (Bool_16 & 16) + (Bool_8 & 8) + (Bool_4 & 4) + (Bool_2 & 2) + (Bool_1 & 1) + x;
-    return position + 1;
+    return (Bool_16 & 16) + (Bool_8 & 8) + (Bool_4 & 4) + (Bool_2 & 2) + (Bool_1 & 1) + x + 1;
 }
 //float
 /* 
@@ -359,7 +361,18 @@ int howManyBits(int x) {
  *   Rating: 4
  */
 unsigned float_twice(unsigned uf) {
-  return 2;
+    unsigned exp = uf >> 23 & 0xFF;
+    unsigned frac = uf & -1U >> 9;
+    if (!~(exp | -1U << 8)) /* uf is inf or NaN */
+        return uf;
+    if (!exp) { /* exp is zero */
+        if (frac & 1 << 22) /* leading of frac is 1 */
+            exp = 1;
+        frac <<= 1;
+    } else if (!~(((exp += 1) | - 1U << 8))) { /* exp is non-zero */
+        frac = 0;
+    }
+    return uf & 1 << 31 | exp << 23 | frac & -1U >> 9;
 }
 /* 
  * float_i2f - Return bit-level equivalent of expression (float) x
@@ -371,7 +384,32 @@ unsigned float_twice(unsigned uf) {
  *   Rating: 4
  */
 unsigned float_i2f(int x) {
-  return 2;
+    unsigned ux;
+    unsigned exp = 0, frac, sign = x & 0x80000000;
+    unsigned grd_b, rnd_b, stky_b;
+    if (sign) /* if x is negative */
+        x = ~x + 1; /* negate x. */
+    ux = (unsigned) x;
+    while (ux) {
+        exp += 1;
+        ux >>= 1; /* logical shift */
+    } /* exp: maximum bit to represent ux */
+    if (!exp) /* if exp is zero */
+        return 0; /* x is zero. */
+    if (exp > 24) { /* need to round. */
+        frac = (unsigned) x >> (exp - 24); /* logical shift */
+        grd_b = frac & 1;
+        rnd_b = x >> (exp - 25) & 1;
+        stky_b = !!(x << (57 - exp));
+        frac += rnd_b & (stky_b | grd_b); /* round frac with IEEE 754 rounding rules. */
+        if (frac & 0x1000000) /* if 25th bit of frac is non-zero, */
+            exp += 1; /* round overflowed. */
+    } else { /* 0 < exp <= 24 */
+        frac = (unsigned) x << (24 - exp);
+    }
+    frac &= 0x7fffff; /* 0x7fffff: mask for frac bits. */
+    exp = (exp + 126) << 23; /* exp: exponential part of result float */
+    return sign | exp | frac;
 }
 /* 
  * float_f2i - Return bit-level equivalent of expression (int) f
@@ -386,5 +424,23 @@ unsigned float_i2f(int x) {
  *   Rating: 4
  */
 int float_f2i(unsigned uf) {
-  return 2;
+    unsigned sign = uf & 0x80000000;
+    unsigned exp = uf & 0x7f800000;
+    unsigned frac = uf & 0x7fffff; /* parse each parts of uf */
+    if (!exp) /* denomalized. */
+        return 0;
+    frac |= 0x800000; /* set 24th bit of frac 1. */
+    /* now frac is 1.xxx * 2^23 unsigned. */
+    int E = (exp >> 23) - 127;
+    if (E > 30) /* uf is inf or NaN when E is 128, which is included in this case. */
+        return 0x80000000;
+    if (E > 23) /* E = 24, 25, ... , 30 */
+        frac <<= (E - 23);
+    else if (E >= 0) /* E = 0, 1, ..., 23 */
+        frac >>= (23 - E);
+    else
+        frac = 0;
+    if (sign) /* if sign is negative */
+        frac = ~frac + 1; /* negate result. */
+    return frac;
 }
