@@ -427,11 +427,12 @@ int float_f2i(unsigned uf) {
     unsigned sign = uf & 0x80000000;
     unsigned exp = uf & 0x7f800000;
     unsigned frac = uf & 0x7fffff; /* parse each parts of uf */
+    int E;
     if (!exp) /* denomalized. */
         return 0;
     frac |= 0x800000; /* set 24th bit of frac 1. */
     /* now frac is 1.xxx * 2^23 unsigned. */
-    int E = (exp >> 23) - 127;
+    E = (exp >> 23) - 127;
     if (E > 30) /* uf is inf or NaN when E is 128, which is included in this case. */
         return 0x80000000;
     if (E > 23) /* E = 24, 25, ... , 30 */
