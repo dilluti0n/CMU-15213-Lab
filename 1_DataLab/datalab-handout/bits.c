@@ -437,7 +437,7 @@ int float_f2i(unsigned uf) {
     if (E > 23) /* E = 24, 25, ... , 30 */
         frac <<= (E - 23);
     else if (E >= 0) /* E = 0, 1, ..., 23 */
-        frac >>= (23 - E);
+        frac >>= (23 - E); /* truncate the exceed bits. (not round!) */
     else
         frac = 0;
     if (sign) /* if sign is negative */
