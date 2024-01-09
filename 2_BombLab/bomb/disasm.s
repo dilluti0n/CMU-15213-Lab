@@ -295,7 +295,7 @@ Disassembly of section .text:
   400e28: bf 78 23 40 00               	movl	$4203384, %edi          # imm = 0x402378
   400e2d: e8 de fc ff ff               	callq	0x400b10 <puts@plt>
   400e32: e8 67 06 00 00               	callq	0x40149e <read_line>
-  400e37: 48 89 c7                     	movq	%rax, %rdi
+  400e37: 48 89 c7                     	movq	%rax, %rdi              ## (char*) %rax: return of read_line. 
   400e3a: e8 a1 00 00 00               	callq	0x400ee0 <phase_1>
   400e3f: e8 80 07 00 00               	callq	0x4015c4 <phase_defused>
   400e44: bf a8 23 40 00               	movl	$4203432, %edi          # imm = 0x4023A8
@@ -343,7 +343,7 @@ Disassembly of section .text:
 
 0000000000400ee0 <phase_1>:
   400ee0: 48 83 ec 08                  	subq	$8, %rsp
-  400ee4: be 00 24 40 00               	movl	$4203520, %esi          # imm = 0x402400
+  400ee4: be 00 24 40 00               	movl	$4203520, %esi          # imm = 0x402400, %esi: second arg of <strings_not_equal>.
   400ee9: e8 4a 04 00 00               	callq	0x401338 <strings_not_equal>
   400eee: 85 c0                        	testl	%eax, %eax
   400ef0: 74 05                        	je	0x400ef7 <phase_1+0x17>
@@ -697,18 +697,18 @@ Disassembly of section .text:
   401338: 41 54                        	pushq	%r12
   40133a: 55                           	pushq	%rbp
   40133b: 53                           	pushq	%rbx
-  40133c: 48 89 fb                     	movq	%rdi, %rbx
-  40133f: 48 89 f5                     	movq	%rsi, %rbp
-  401342: e8 d4 ff ff ff               	callq	0x40131b <string_length>
-  401347: 41 89 c4                     	movl	%eax, %r12d
+  40133c: 48 89 fb                     	movq	%rdi, %rbx                        ## %rbx: first arg of func.
+  40133f: 48 89 f5                     	movq	%rsi, %rbp                        ## %rsi: second arg of func.
+  401342: e8 d4 ff ff ff               	callq	0x40131b <string_length>          ## %eax: length of string refed by %rdi(%rbx) 
+  401347: 41 89 c4                     	movl	%eax, %r12d                       ## store first arg's length to %r12d.
   40134a: 48 89 ef                     	movq	%rbp, %rdi
   40134d: e8 c9 ff ff ff               	callq	0x40131b <string_length>
-  401352: ba 01 00 00 00               	movl	$1, %edx
-  401357: 41 39 c4                     	cmpl	%eax, %r12d
-  40135a: 75 3f                        	jne	0x40139b <strings_not_equal+0x63>
-  40135c: 0f b6 03                     	movzbl	(%rbx), %eax
+  401352: ba 01 00 00 00               	movl	$1, %edx                          ## store 1 to %edx
+  401357: 41 39 c4                     	cmpl	%eax, %r12d                       ## cmp two string's length
+  40135a: 75 3f                        	jne	0x40139b <strings_not_equal+0x63>   ## if not eq: return %edx(1).
+  40135c: 0f b6 03                     	movzbl	(%rbx), %eax                    ## %eax: first char of string.
   40135f: 84 c0                        	testb	%al, %al
-  401361: 74 25                        	je	0x401388 <strings_not_equal+0x50>
+  401361: 74 25                        	je	0x401388 <strings_not_equal+0x50>   ## if %al is 0, return 0.
   401363: 3a 45 00                     	cmpb	(%rbp), %al
   401366: 74 0a                        	je	0x401372 <strings_not_equal+0x3a>
   401368: eb 25                        	jmp	0x40138f <strings_not_equal+0x57>
@@ -722,12 +722,12 @@ Disassembly of section .text:
   40137f: 75 e9                        	jne	0x40136a <strings_not_equal+0x32>
   401381: ba 00 00 00 00               	movl	$0, %edx
   401386: eb 13                        	jmp	0x40139b <strings_not_equal+0x63>
-  401388: ba 00 00 00 00               	movl	$0, %edx
+  401388: ba 00 00 00 00               	movl	$0, %edx                       ## +0x50: store 0 to %edx.
   40138d: eb 0c                        	jmp	0x40139b <strings_not_equal+0x63>
   40138f: ba 01 00 00 00               	movl	$1, %edx
   401394: eb 05                        	jmp	0x40139b <strings_not_equal+0x63>
   401396: ba 01 00 00 00               	movl	$1, %edx
-  40139b: 89 d0                        	movl	%edx, %eax
+  40139b: 89 d0                        	movl	%edx, %eax                      ## +0x63: return %edx.
   40139d: 5b                           	popq	%rbx
   40139e: 5d                           	popq	%rbp
   40139f: 41 5c                        	popq	%r12
