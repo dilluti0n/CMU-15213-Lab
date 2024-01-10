@@ -361,13 +361,13 @@ Disassembly of section .text:
   400f0e: 74 20                        	je	0x400f30 <phase_2+0x34>
   400f10: e8 25 05 00 00               	callq	0x40143a <explode_bomb>
   400f15: eb 19                        	jmp	0x400f30 <phase_2+0x34>
-  400f17: 8b 43 fc                     	movl	-4(%rbx), %eax
-  400f1a: 01 c0                        	addl	%eax, %eax
-  400f1c: 39 03                        	cmpl	%eax, (%rbx)
-  400f1e: 74 05                        	je	0x400f25 <phase_2+0x29>
+  400f17: 8b 43 fc                     	movl	-4(%rbx), %eax             ## store 2^(i-1) to %eax.
+  400f1a: 01 c0                        	addl	%eax, %eax                 ## double it.
+  400f1c: 39 03                        	cmpl	%eax, (%rbx)               ## comp with (%rbx).
+  400f1e: 74 05                        	je	0x400f25 <phase_2+0x29>      ## if (%rbx) is same(which is 2^i) , jump to +0x29.
   400f20: e8 15 05 00 00               	callq	0x40143a <explode_bomb>
-  400f25: 48 83 c3 04                  	addq	$4, %rbx
-  400f29: 48 39 eb                     	cmpq	%rbp, %rbx
+  400f25: 48 83 c3 04                  	addq	$4, %rbx                   ## i++
+  400f29: 48 39 eb                     	cmpq	%rbp, %rbx                 ## (%rbx = %rsp + 4 * i, %rbp = %rsp + 24)
   400f2c: 75 e9                        	jne	0x400f17 <phase_2+0x1b>
   400f2e: eb 0c                        	jmp	0x400f3c <phase_2+0x40>
   400f30: 48 8d 5c 24 04               	leaq	4(%rsp), %rbx
