@@ -35,6 +35,24 @@ void phase_2(char *input)
     }
 }
 
+int func4(int x, int y, int z)
+{
+    int tmp = (z-y)+ (unsigned) (z-y) >> 31; /* logical shift */
+    tmp >>= 1; /* arith shift */
+    int ecx = tmp + y * 1;
+    if (x < ecx) {
+        tmp = func4(x, y, ecx - 1);
+        tmp += tmp;
+    } else {
+        tmp = 0;
+        if (x > ecx) {
+            tmp = func4(x, ecx + 1, z);
+            tmp = tmp + tmp + 1;
+        }
+    }
+    return tmp;
+}
+
 main()
 {
     char *input;
